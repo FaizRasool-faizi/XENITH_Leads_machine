@@ -979,32 +979,54 @@ export default function DashboardPage() {
                   <div>
                     <span className="text-slate-400">Website:</span>
                     {selectedLead.websiteUrl ? (
-                      <div className="mt-1 flex items-center justify-between gap-2 bg-slate-950 p-2 rounded border border-slate-800">
-                        <a
-                          href={selectedLead.websiteUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-cyan-400 hover:underline truncate inline-flex items-center gap-1 text-[11px]"
-                        >
-                          <span>{selectedLead.websiteUrl}</span>
-                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                        </a>
-                        <button
-                          onClick={() => handleAuditLeadWebsite(selectedLead)}
-                          disabled={auditingLeadId === selectedLead.id}
-                          className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-[10px] font-semibold flex items-center gap-1 disabled:opacity-50 flex-shrink-0"
-                          title="Run live opportunity scan on this URL"
-                        >
-                          {auditingLeadId === selectedLead.id ? (
-                            <RefreshCw className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Zap className="w-3 h-3" />
-                          )}
-                          <span>Audit</span>
-                        </button>
+                      <div className="mt-1 flex flex-col gap-1.5 bg-slate-950 p-2.5 rounded border border-slate-800">
+                        <div className="flex items-center justify-between gap-2">
+                          <a
+                            href={selectedLead.websiteUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-cyan-400 hover:underline truncate inline-flex items-center gap-1 text-[11px] font-medium"
+                          >
+                            <span>{selectedLead.websiteUrl}</span>
+                            <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          </a>
+                          <button
+                            onClick={() => handleAuditLeadWebsite(selectedLead)}
+                            disabled={auditingLeadId === selectedLead.id}
+                            className="px-2 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-[10px] font-semibold flex items-center gap-1 disabled:opacity-50 flex-shrink-0"
+                            title="Run live opportunity scan on this URL"
+                          >
+                            {auditingLeadId === selectedLead.id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Zap className="w-3 h-3" />
+                            )}
+                            <span>Audit</span>
+                          </button>
+                        </div>
+                        {selectedLead.isReachable === false && (
+                          <div className="text-[10px] text-rose-400 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            <span>Site Unreachable / Offline — Prime prospect for New Web Development!</span>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <span className="ml-1 text-slate-500 italic">None registered</span>
+                      <div className="mt-1 flex items-center justify-between gap-2 bg-slate-950 p-2 rounded border border-slate-800">
+                        <span className="text-amber-400 text-[11px] font-medium flex items-center gap-1">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          <span>No official website listed</span>
+                        </span>
+                        <a
+                          href={`https://www.google.com/search?q=${encodeURIComponent(selectedLead.name + " " + selectedLead.city)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-semibold flex items-center gap-1"
+                        >
+                          <span>Google Search</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
                     )}
                   </div>
 
