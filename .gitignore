@@ -1,0 +1,38 @@
+# Python virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Pytest & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases and runtime data (preserve schema migrations and docs)
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Logs and local exports
+logs/*.log
+exports/*.csv
+exports/*.xlsx
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Node.js and Next.js
+**/node_modules/
+**/.next/
+**/.vercel/
+**/npm-debug.log*
+**/.pnpm-debug.log*
+**/*.tsbuildinfo
