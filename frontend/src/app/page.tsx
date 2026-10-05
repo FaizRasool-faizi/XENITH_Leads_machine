@@ -65,12 +65,15 @@ export default function DashboardPage() {
   const [selectedPriority, setSelectedPriority] = useState("All");
 
   // Selected Lead for Detail / Drawer
-  const [selectedLeadId, setSelectedLeadId] = useState<number>(1);
-  const selectedLead = useMemo(() => leads.find((l) => l.id === selectedLeadId) || leads[0], [leads, selectedLeadId]);
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
+  const selectedLead = useMemo(() => {
+    if (leads.length === 0) return null;
+    return leads.find((l) => l.id === selectedLeadId) || leads[0] || null;
+  }, [leads, selectedLeadId]);
 
   // Live Analyzer State
-  const [analyzeUrl, setAnalyzeUrl] = useState("https://austindentalspa.com");
-  const [analyzeCategory, setAnalyzeCategory] = useState("Dentist & Dental Clinic");
+  const [analyzeUrl, setAnalyzeUrl] = useState("https://www.systemsltd.com");
+  const [analyzeCategory, setAnalyzeCategory] = useState("Consulting & IT Companies");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
 
@@ -78,9 +81,9 @@ export default function DashboardPage() {
   const [auditingLeadId, setAuditingLeadId] = useState<number | null>(null);
 
   // Discovery State
-  const [discoverCity, setDiscoverCity] = useState("Austin");
-  const [discoverCountry, setDiscoverCountry] = useState("United States");
-  const [discoverCategory, setDiscoverCategory] = useState("Healthcare & Medical");
+  const [discoverCity, setDiscoverCity] = useState("Lahore");
+  const [discoverCountry, setDiscoverCountry] = useState("Pakistan");
+  const [discoverCategory, setDiscoverCategory] = useState("Consulting & IT Companies");
   const [discoverLimit, setDiscoverLimit] = useState(15);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoverySuccess, setDiscoverySuccess] = useState("");
@@ -110,15 +113,43 @@ export default function DashboardPage() {
   const [toastMessage, setToastMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount & purge any old mock data
   useEffect(() => {
     try {
       const savedLeads = localStorage.getItem("xenith_leads_store");
       if (savedLeads) {
         const parsed = JSON.parse(savedLeads);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setLeads(parsed);
-          setSelectedLeadId(parsed[0].id);
+        if (Array.isArray(parsed)) {
+          const dummyMarkers = [
+            "lahore solutions group",
+            "lahore digital dynamics",
+            "lahore strategy consultants",
+            "lahore tech innovations",
+            "lahore enterprise systems",
+            "austin dental spa",
+            "apex plumbing",
+            "calgary integrative wellness",
+            "sydney legal",
+            "dubai elite property",
+            "pacific northwest roofing",
+            "toronto modern accounting",
+            "melbourne specialist dental",
+            "gulf logistics",
+            "austin commercial builders",
+          ];
+          const cleaned = parsed.filter((l: BusinessLead) => {
+            const n = (l.name || "").toLowerCase();
+            const u = (l.websiteUrl || "").toLowerCase();
+            return !dummyMarkers.some((m) => n.includes(m) || u.includes(m.replace(/\s+/g, "")));
+          });
+
+          setLeads(cleaned);
+          if (cleaned.length > 0) {
+            setSelectedLeadId(cleaned[0].id);
+            localStorage.setItem("xenith_leads_store", JSON.stringify(cleaned));
+          } else {
+            localStorage.removeItem("xenith_leads_store");
+          }
         }
       }
       const savedSup = localStorage.getItem("xenith_suppression_store");
@@ -209,17 +240,27 @@ export default function DashboardPage() {
     showToast("Scoring weights updated & all lead scores recalculated.");
   };
 
-  // Reset to default sample leads
+  // Clear all leads from database
+  const handleClearAllLeads = () => {
+    if (confirm("Are you sure you want to clear all leads from the database and start fresh?")) {
+      setLeads([]);
+      setSelectedLeadId(null);
+      localStorage.removeItem("xenith_leads_store");
+      showToast("All leads cleared from database.");
+    }
+  };
+
+  // Reset to clean state
   const handleResetToDefaults = () => {
-    if (confirm("Reset leads and suppression lists to default XENITH verified data?")) {
-      setLeads(INITIAL_LEADS);
-      setSuppressionList(INITIAL_SUPPRESSION);
+    if (confirm("Clear all stored data and reset database to clean state?")) {
+      setLeads([]);
+      setSuppressionList([]);
       setWeights(DEFAULT_WEIGHTS);
-      setSelectedLeadId(INITIAL_LEADS[0].id);
+      setSelectedLeadId(null);
       localStorage.removeItem("xenith_leads_store");
       localStorage.removeItem("xenith_suppression_store");
       localStorage.removeItem("xenith_weights_store");
-      showToast("Reset completed successfully.");
+      showToast("Database reset to clean state successfully.");
     }
   };
 
@@ -897,6 +938,15 @@ export default function DashboardPage() {
                 </button>
 
                 <button
+                  onClick={handleClearAllLeads}
+                  className="px-3 py-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors border border-rose-800/40"
+                  title="Clear all leads from database"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear All</span>
+                </button>
+
+                <button
                   onClick={handleDownloadCSV}
                   className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
                 >
@@ -921,59 +971,79 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {filteredLeads.map((lead) => {
-                        const isSelected = selectedLead?.id === lead.id;
-                        return (
-                          <tr
-                            key={lead.id}
-                            onClick={() => setSelectedLeadId(lead.id)}
-                            className={`cursor-pointer transition-colors ${
-                              isSelected ? "bg-cyan-500/10 border-l-2 border-cyan-400" : "hover:bg-slate-800/40"
-                            }`}
-                          >
-                            <td className="px-4 py-3">
-                              <div className="font-semibold text-white">{lead.name}</div>
-                              <div className="text-[11px] text-slate-400 truncate max-w-[180px]">
-                                {lead.websiteUrl || "No website"}
-                              </div>
-                            </td>
-                            <td className="px-3 py-3 text-slate-300">{lead.category}</td>
-                            <td className="px-3 py-3 text-slate-300">
-                              {lead.city}, {lead.country}
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <span className="font-bold text-sm text-cyan-300">{lead.score.total}</span>
-                            </td>
-                            <td className="px-3 py-3">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  lead.score.priority === "HIGH_PRIORITY"
-                                    ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
-                                    : lead.score.priority === "POTENTIAL_PROSPECT"
-                                    ? "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30"
-                                    : "bg-slate-700/30 text-slate-400"
-                                }`}
-                              >
-                                {lead.score.priority.replace("_", " ")}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {filteredLeads.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-16 text-center text-slate-500">
+                            <Building2 className="w-10 h-10 text-slate-700 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm font-semibold text-slate-300">No leads in database</p>
+                            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                              Database is currently clean. Use the <strong>Live Lead Finder</strong> tab to search real companies worldwide or click <strong>+ Add Lead</strong>.
+                            </p>
+                            <button
+                              onClick={() => setActiveTab("discovery")}
+                              className="mt-4 px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 shadow-md shadow-cyan-500/20"
+                            >
+                              <Globe className="w-3.5 h-3.5" />
+                              <span>Open Live Lead Finder</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredLeads.map((lead) => {
+                          const isSelected = selectedLead?.id === lead.id;
+                          return (
+                            <tr
+                              key={lead.id}
+                              onClick={() => setSelectedLeadId(lead.id)}
+                              className={`cursor-pointer transition-colors ${
+                                isSelected ? "bg-cyan-500/10 border-l-2 border-cyan-400" : "hover:bg-slate-800/40"
+                              }`}
+                            >
+                              <td className="px-4 py-3">
+                                <div className="font-semibold text-white">{lead.name}</div>
+                                <div className="text-[11px] text-slate-400 truncate max-w-[180px]">
+                                  {lead.websiteUrl || "No website"}
+                                </div>
+                              </td>
+                              <td className="px-3 py-3 text-slate-300">{lead.category}</td>
+                              <td className="px-3 py-3 text-slate-300">
+                                {lead.city}, {lead.country}
+                              </td>
+                              <td className="px-3 py-3 text-center">
+                                <span className="font-bold text-sm text-cyan-300">{lead.score.total}</span>
+                              </td>
+                              <td className="px-3 py-3">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    lead.score.priority === "HIGH_PRIORITY"
+                                      ? "bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                                      : lead.score.priority === "POTENTIAL_PROSPECT"
+                                      ? "bg-cyan-500/15 text-cyan-300 border border-cyan-500/30"
+                                      : "bg-slate-700/30 text-slate-400"
+                                  }`}
+                                >
+                                  {lead.score.priority.replace("_", " ")}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
 
               {/* Lead Evidence Drawer */}
-              <div className="bg-slate-900/60 backdrop-blur-md rounded-xl p-5 border border-slate-800/80 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div>
-                    <h4 className="font-bold text-white text-base">{selectedLead.name}</h4>
-                    <span className="text-xs text-slate-400">{selectedLead.category}</span>
+              {selectedLead ? (
+                <div className="bg-slate-900/60 backdrop-blur-md rounded-xl p-5 border border-slate-800/80 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                      <h4 className="font-bold text-white text-base">{selectedLead.name}</h4>
+                      <span className="text-xs text-slate-400">{selectedLead.category}</span>
+                    </div>
+                    <span className="text-xl font-extrabold text-cyan-400">{selectedLead.score.total}/100</span>
                   </div>
-                  <span className="text-xl font-extrabold text-cyan-400">{selectedLead.score.total}/100</span>
-                </div>
 
                 <div className="space-y-3 text-xs">
                   <div>
